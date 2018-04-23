@@ -4,7 +4,8 @@ var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEv
 
 var phrases = [
   "in stride you're a jerk",
-  "in stride sit down"
+  "in stride sit down",
+  "it's too late"
 ]
 
 var phrasePara = document.querySelector('.phrase');
@@ -50,7 +51,6 @@ function testSpeech() {
     // We then return the transcript property of the SpeechRecognitionAlternative object 
     var speechResult = event.results[0][0].transcript;
     diagnosticPara.textContent = 'Speech received: ' + speechResult + '.';
-    // if(speechResult === phrase) {
       switch (speechResult) {
         case "you're a jerk":
           window.open('https://www.youtube.com/watch?v=qv9VKKXwVxU&feature=youtu.be&t=24', '_newtab')
@@ -58,6 +58,24 @@ function testSpeech() {
         case "sit down":
           window.open("https://www.youtube.com/watch?v=tvTRZJ-4EyI&feature=youtu.be&t=65", "_newtab")
           break;
+        case "it's too late":
+        case "too late":
+          window.open("https://www.youtube.com/watch?v=ZSM3w1v-A_Y&feature=youtu.be&t=57")
+          break;
+        case "don't worry":
+          window.open("https://www.youtube.com/watch?v=d-diB65scQU&feature=youtu.be&t=38")
+          break;
+        case "when you start getting a lot of this":
+          window.open("https://www.youtube.com/watch?v=TbmnonNSdWo&feature=youtu.be&t=3")
+          break;
+        case "you start getting a lot of this":
+          window.open("https://www.youtube.com/watch?v=TbmnonNSdWo&feature=youtu.be&t=3")
+          break;
+        case "eat your vegetables":
+          window.open("https://youtu.be/93p6Lsr2GK4?t=0")
+          break;
+        case "wait on the Lord":
+          window.open("https://www.youtube.com/watch?v=J2ulONRdzKE&feature=youtu.be&t=39")
         default:
           resultPara.textContent = 'That didn\'t sound right.';
           resultPara.style.background = 'red';

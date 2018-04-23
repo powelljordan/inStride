@@ -12,8 +12,12 @@ var phrasePara = document.querySelector('.phrase');
 var resultPara = document.querySelector('.result');
 var diagnosticPara = document.querySelector('.output');
 
-var testBtn = document.querySelector('button');
+var player;
+var playbackInfoSubscribers = [];
+var isPlaying = false;
 
+var testBtn = document.querySelector('#start');
+var playPauseBtn = document.querySelector("#playPause");
 function randomPhrase() {
   var number = Math.floor(Math.random() * phrases.length);
   return number;
@@ -51,6 +55,10 @@ function testSpeech() {
     // We then return the transcript property of the SpeechRecognitionAlternative object 
     var speechResult = event.results[0][0].transcript;
     diagnosticPara.textContent = 'Speech received: ' + speechResult + '.';
+      speechResult = speechResult.toLowerCase();
+      speechResult = speechResult.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+      speechResult = speechResult.replace(/\s{2,}/g," ");
+      console.log(speechResult);
       switch (speechResult) {
         case "you're a jerk":
           window.open('https://www.youtube.com/watch?v=qv9VKKXwVxU&feature=youtu.be&t=24', '_newtab')
@@ -72,10 +80,29 @@ function testSpeech() {
           window.open("https://www.youtube.com/watch?v=TbmnonNSdWo&feature=youtu.be&t=3")
           break;
         case "eat your vegetables":
-          window.open("https://youtu.be/93p6Lsr2GK4?t=0")
+          //Example using spotify
+          if (player) {
+            play({
+              playerInstance: player,
+              spotify_uri: 'spotify:track:27QkAEvVqcIW12r3tCpWzB',
+            });
+          } else {
+            window.open("https://youtu.be/93p6Lsr2GK4?t=0")
+          }
           break;
         case "wait on the Lord":
           window.open("https://www.youtube.com/watch?v=J2ulONRdzKE&feature=youtu.be&t=39")
+        case "this is how we do it":
+          if (player) {
+            play({
+              playerInstance: player,
+              spotify_uri: 'spotify:track:6uQKuonTU8VKBz5SHZuQXD',
+              seekPosition: 17 * 1000
+            })
+          } else {
+            window.open("https://www.youtube.com/watch?v=0hiUuL5uTKc&feature=youtu.be&t=69")
+          }
+          break;
         default:
           resultPara.textContent = 'That didn\'t sound right.';
           resultPara.style.background = 'red';
@@ -137,4 +164,112 @@ function testSpeech() {
   }
 }
 
+function playPauseSpotify() {
+  if (isPlaying) {
+    clearInterval(updatePlaybackInfo, 1000);
+    playPauseBtn.innerHTML = 'Play';
+    player.pause();
+  } else {
+    setInterval(updatePlaybackInfo, 1000);
+    playPauseBtn.innerHTML = 'Pause';
+    player.resume();
+  }
+  isPlaying = !isPlaying;
+}
+
 testBtn.addEventListener('click', testSpeech);
+playPauseBtn.addEventListener('click', playPauseSpotify);
+document.querySelector("#spotify").addEventListener('click', implicitGrant);
+
+///Spotify stuff
+const clientId = "a5f80726272a40d0b67ee389c09e753a";
+
+window.onSpotifyWebPlaybackSDKReady = () => {
+  var url = window.location.href,
+  access_token = url.match(/\#(?:access_token)\=([\S\s]*?)\&/)[1];
+  // temp token only last an hour
+  const token = access_token
+     player = new Spotify.Player({
+    name: 'InStride Player',
+    getOAuthToken: cb => { cb(token); }
+  });
+
+  // Error handling
+  player.addListener('initialization_error', ({ message }) => { console.error(message); });
+  player.addListener('authentication_error', ({ message }) => { console.error(message); });
+  player.addListener('account_error', ({ message }) => { console.error(message); });
+  player.addListener('playback_error', ({ message }) => { console.error(message); });
+
+  // Playback status updates
+  player.addListener('player_state_changed', ({
+    position,
+    duration,
+    track_window: { current_track }
+  }) => {
+    console.log('Currently Playing', current_track);
+    console.log('Position in Song', position);
+    console.log('Duration of Song', duration);
+  });
+
+  
+
+  // Ready
+  player.addListener('ready', ({ device_id }) => {
+    console.log('Ready with Device ID', device_id);
+  });
+
+  // Connect to the player!
+  player.connect();
+};
+
+const play = ({
+  spotify_uri,
+  seekPosition,
+  playerInstance: {
+    _options: {
+      getOAuthToken,
+      id
+    }
+  }
+}) => {
+  if (!isPlaying) {
+    setInterval(updatePlaybackInfo, 1000);
+    isPlaying = true;
+  }
+  getOAuthToken(access_token => {
+    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ uris: [spotify_uri] }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+      },
+    }).then(() => {
+      console.log("seek: ", seekPosition);
+      if (seekPosition) {
+        playbackInfoSubscribers.push((state) => {
+            if (state.position > 0 && state.position < seekPosition) {
+              console.log("seeking");
+              player.seek(seekPosition);
+            }
+        })
+      }
+    });
+  });
+};
+
+function implicitGrant(){
+  const redirectURI = "http://localhost:1337";
+  window.open(`https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectURI}&scope=user-modify-playback-state user-read-playback-state user-read-currently-playing streaming%20user-read-birthdate user-read-email user-read-private`)
+
+  window.close();
+  console.log(window.location);
+}
+
+function updatePlaybackInfo() {
+  player.getCurrentState().then(state => {
+    for (let s of playbackInfoSubscribers) {
+      s(state);
+    }
+  })
+}

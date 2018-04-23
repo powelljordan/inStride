@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width">
 
-    <title>Phrase matcher</title>
+    <title>InStride</title>
 
     <link rel="stylesheet" href="style.css">
     <!--[if lt IE 9]>
@@ -14,10 +14,12 @@
   </head>
 
   <body>
-    <h1>Phrase matcher</h1>
+    <h1>InStride</h1>
     <p>Press the button then say the phrase to test the recognition.</p>
 
-    <button>Start new test</button>
+    <button id="start">Start new test</button>
+    <button id="playPause">Pause</button>
+    <button id="spotify">Connect to Spotify</button>
 
     <div>
         <p class="phrase">Phrase...</p>
@@ -26,5 +28,6 @@
     </div>
 
     <script src="mach-1.js"></script>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
   </body>
 </html>

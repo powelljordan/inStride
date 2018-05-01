@@ -61,10 +61,10 @@ function testSpeech() {
       console.log(speechResult);
       switch (speechResult) {
         case "you're a jerk":
-          window.open('https://www.youtube.com/watch?v=qv9VKKXwVxU&feature=youtu.be&t=24', '_newtab')
+          window.open('https://www.youtube.com/watch?v=qv9VKKXwVxU&feature=youtu.be&t=24')
           break;
         case "sit down":
-          window.open("https://www.youtube.com/watch?v=tvTRZJ-4EyI&feature=youtu.be&t=65", "_newtab")
+          window.open("https://www.youtube.com/watch?v=tvTRZJ-4EyI&feature=youtu.be&t=65")
           break;
         case "it's too late":
         case "too late":
@@ -90,19 +90,33 @@ function testSpeech() {
             window.open("https://youtu.be/93p6Lsr2GK4?t=0")
           }
           break;
-        case "wait on the Lord":
+        case "wait on the lord":
           window.open("https://www.youtube.com/watch?v=J2ulONRdzKE&feature=youtu.be&t=39")
         case "this is how we do it":
           if (player) {
-            play({
+            var status = play({
               playerInstance: player,
               spotify_uri: 'spotify:track:6uQKuonTU8VKBz5SHZuQXD',
               seekPosition: 17 * 1000
             })
-          } else {
-            window.open("https://www.youtube.com/watch?v=0hiUuL5uTKc&feature=youtu.be&t=69")
           }
+          
+          done = false;
+          playerYT.cueVideoById({'videoId': '0hiUuL5uTKc',
+               'startSeconds': 69,
+               'endSeconds': 71,
+               'suggestedQuality': 'large'});
+          playerYT.playVideo();
+
+          console.log(playerYT.videoId);
           break;
+        case "i learn from the best":
+        case "i learned from the best":
+          playerYT.cueVideoById({'videoId': 'YFVnVuTcz9I',
+               'startSeconds': 229,
+               'endSeconds': 235,
+               'suggestedQuality': 'large'});
+               playerYT.playVideo();
         default:
           resultPara.textContent = 'That didn\'t sound right.';
           resultPara.style.background = 'red';
@@ -137,6 +151,8 @@ function testSpeech() {
   recognition.onend = function(event) {
       //Fired when the speech recognition service has disconnected.
       console.log('SpeechRecognition.onend');
+      
+      recognition.start();
   }
   
   recognition.onnomatch = function(event) {
@@ -236,7 +252,7 @@ const play = ({
     setInterval(updatePlaybackInfo, 1000);
     isPlaying = true;
   }
-  getOAuthToken(access_token => {
+  return getOAuthToken(access_token => {
     fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
       method: 'PUT',
       body: JSON.stringify({ uris: [spotify_uri] }),
@@ -244,9 +260,10 @@ const play = ({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
       },
-    }).then(() => {
+    }).then((response) => {
+      console.log("response: ", response.status);
       console.log("seek: ", seekPosition);
-      if (seekPosition) {
+      if (seekPosition && response.status != 403) {
         playbackInfoSubscribers.push((state) => {
             if (state.position > 0 && state.position < seekPosition) {
               console.log("seeking");
@@ -254,6 +271,7 @@ const play = ({
             }
         })
       }
+      return response.status;
     });
   });
 };
@@ -273,3 +291,48 @@ function updatePlaybackInfo() {
     }
   })
 }
+
+      // 2. This code loads the IFrame Player API code asynchronously.
+      var tag = document.createElement('script');
+
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      // 3. This function creates an <iframe> (and YouTube player)
+      //    after the API code downloads.
+      var playerYT;
+      function onYouTubeIframeAPIReady() {
+        playerYT = new YT.Player('youtubeplayer', {
+          height: '390',
+          width: '640',
+          videoId: '1i1Mv-cNy3w',
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      }
+
+      // 4. The API will call this function when the video player is ready.
+      function onPlayerReady(event) {
+        event.target.playVideo();
+      }
+
+      // 5. The API calls this function when the player's state changes.
+      //    The function indicates that when playing a video (state=1),
+      //    the player should play for six seconds and then stop.
+      var done = false;
+      function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.PLAYING && !done) {
+          setTimeout(stopVideo, 6000);
+          done = true;
+        } else if (!done){
+          done = false;
+          event.target.playVideo();
+          setTimeout(stopVideo, 6000);
+        }
+      }
+      function stopVideo() {
+        playerYT.stopVideo();
+      }

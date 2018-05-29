@@ -26,6 +26,8 @@ function randomPhrase() {
 function testSpeech() {
   testBtn.disabled = true;
   testBtn.textContent = 'Test in progress';
+  shouldListen = true;
+  shouldRespond = true;
 
   var phrase = phrases[randomPhrase()];
   phrasePara.textContent = phrase;
@@ -59,25 +61,29 @@ function testSpeech() {
       speechResult = speechResult.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
       speechResult = speechResult.replace(/\s{2,}/g," ");
       console.log(speechResult);
+
+      if (!shouldRespond) {
+        processInstrideCommand(speechResult, recognition);
+        return;
+      }
+
       switch (speechResult) {
         case "you're a jerk":
-          window.open('https://www.youtube.com/watch?v=qv9VKKXwVxU&feature=youtu.be&t=24')
+          playYoutube("qv9VKKXwVxU", 24);
           break;
         case "sit down":
-          window.open("https://www.youtube.com/watch?v=tvTRZJ-4EyI&feature=youtu.be&t=65")
+          playYoutube("tvTRZJ-4EyI", 65);
           break;
         case "it's too late":
         case "too late":
-          window.open("https://www.youtube.com/watch?v=ZSM3w1v-A_Y&feature=youtu.be&t=57")
+          playYoutube("ZSM3w1v-A_Y", 57);
           break;
         case "don't worry":
-          window.open("https://www.youtube.com/watch?v=d-diB65scQU&feature=youtu.be&t=38")
+          playYoutube("d-diB65scQU", 38);
           break;
         case "when you start getting a lot of this":
-          window.open("https://www.youtube.com/watch?v=TbmnonNSdWo&feature=youtu.be&t=3")
-          break;
         case "you start getting a lot of this":
-          window.open("https://www.youtube.com/watch?v=TbmnonNSdWo&feature=youtu.be&t=3")
+          playYoutube("TbmnonNSdWo", 3)
           break;
         case "eat your vegetables":
           //Example using spotify
@@ -87,11 +93,12 @@ function testSpeech() {
               spotify_uri: 'spotify:track:27QkAEvVqcIW12r3tCpWzB',
             });
           } else {
-            window.open("https://youtu.be/93p6Lsr2GK4?t=0")
+            playYoutube("93p6Lsr2GK4", 0);
           }
           break;
         case "wait on the lord":
-          window.open("https://www.youtube.com/watch?v=J2ulONRdzKE&feature=youtu.be&t=39")
+          playYoutube("J2ulONRdzKE", 39);
+          break;
         case "this is how we do it":
           if (player) {
             var status = play({
@@ -101,25 +108,29 @@ function testSpeech() {
             })
           }
           
-          done = false;
-          playerYT.cueVideoById({'videoId': '0hiUuL5uTKc',
-               'startSeconds': 69,
-               'endSeconds': 71,
-               'suggestedQuality': 'large'});
-          playerYT.playVideo();
-
-          console.log(playerYT.videoId);
+          playYoutube("0hiUuL5uTKc", 69);
           break;
         case "i learn from the best":
         case "i learned from the best":
-          playerYT.cueVideoById({'videoId': 'YFVnVuTcz9I',
-               'startSeconds': 229,
-               'endSeconds': 235,
-               'suggestedQuality': 'large'});
-               playerYT.playVideo();
+          playYoutube("YFVnVuTcz9I", 229);
+          break;
+        case "on my own":
+          playYoutube("KsH63qJlIMM", 51);
+          break;
+        case "ice box":
+        case "icebox":
+          playYoutube("jQybgJCswF0", 112);
+          break;
+        case "i love your smell":
+          playYoutube("OHb_tFrvJfA", 0);
+          break;
         default:
-          resultPara.textContent = 'That didn\'t sound right.';
-          resultPara.style.background = 'red';
+          if (speechResult.includes("instride")) {
+            processInstrideCommand(speechResult, recognition);
+          } else {
+            resultPara.textContent = 'That didn\'t sound right.';
+            resultPara.style.background = 'red';
+          }
           break;
     } 
 
@@ -151,8 +162,8 @@ function testSpeech() {
   recognition.onend = function(event) {
       //Fired when the speech recognition service has disconnected.
       console.log('SpeechRecognition.onend');
-      
-      recognition.start();
+      if (shouldListen)
+        recognition.start();
   }
   
   recognition.onnomatch = function(event) {
@@ -177,6 +188,18 @@ function testSpeech() {
   recognition.onstart = function(event) {
       //Fired when the speech recognition service has begun listening to incoming audio with intent to recognize grammars associated with the current SpeechRecognition.
       console.log('SpeechRecognition.onstart');
+  }
+}
+
+function processInstrideCommand(command, recognition) {
+  if(command.includes("instride start") || command.includes("instride restart")) {
+    shouldRespond = true;
+  } else if (command.includes("instride pause")) {
+    shouldRespond = false;
+  } else if (command.includes("instride stop")) {    
+    shouldListen = false;
+    shouldRespond = false;
+    recognition.stop();
   }
 }
 
@@ -316,7 +339,7 @@ function updatePlaybackInfo() {
 
       // 4. The API will call this function when the video player is ready.
       function onPlayerReady(event) {
-        event.target.playVideo();
+        //event.target.playVideo();
       }
 
       // 5. The API calls this function when the player's state changes.
@@ -335,4 +358,15 @@ function updatePlaybackInfo() {
       }
       function stopVideo() {
         playerYT.stopVideo();
+      }
+
+      function playYoutube(youtubeVideoId, start) {
+        done = false;
+        // Example using youtube
+        playerYT.cueVideoById({'videoId': youtubeVideoId,
+             'startSeconds': start,
+             'suggestedQuality': 'small'});
+        playerYT.playVideo();
+
+        console.log(playerYT.videoId);
       }
